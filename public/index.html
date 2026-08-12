@@ -1,5 +1,5 @@
 <!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>MATH SCHOOL 3D V6.3</title><style>
+<title>MATH SCHOOL 3D V6.4.1</title><style>
 *{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;font-family:Arial,sans-serif;background:#081827;color:white;touch-action:none}
 canvas{display:block}#login{position:fixed;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;background:linear-gradient(#123d5b,#071827)}
 .card{width:min(92vw,520px);padding:28px;background:#071c2b;border:3px solid #48b6ff;border-radius:25px;box-shadow:0 18px 60px #0008}.card h1{color:#ffd047;font-size:clamp(30px,7vw,52px);margin:0 0 10px}.card input{width:100%;padding:16px;border-radius:12px;border:0;font-size:20px;margin:12px 0}.card button,.action{border:0;border-radius:12px;background:#f4aa27;color:#111;font-weight:800;padding:16px;font-size:18px}
@@ -11,14 +11,23 @@ canvas{display:block}#login{position:fixed;inset:0;z-index:20;display:flex;align
 #progress{position:absolute;left:50%;top:78px;transform:translateX(-50%);width:min(45vw,430px);height:10px;background:#0006;border-radius:8px;overflow:hidden}#progress i{display:block;height:100%;width:0;background:#ffd047;transition:.3s}#pcHint{display:none;position:absolute;left:50%;bottom:18px;transform:translateX(-50%);background:#071c2be8;border:1px solid #ffffff35;border-radius:12px;padding:9px 14px;font-weight:bold;font-size:13px;white-space:nowrap}#answers{display:grid;grid-template-columns:1fr 1fr;gap:8px}#answers button{padding:12px;border:0;border-radius:9px;font-weight:bold}.small{opacity:.8;font-size:13px}
 @media(pointer:fine){#joy,#look{display:none!important}#pcHint{display:block}}
 @media(max-width:650px){.mission{top:105px;max-width:68vw;font-size:11px}.box{padding:9px 12px}.xp{font-size:17px}}
-</style></head><body>
-<div id="login"><div class="card"><h1>🏫 MATH SCHOOL 3D <small>V6.3.1</small></h1><p>Entre na escola, encontre o diretor e escolha sua sala.</p><input id="name" placeholder="Nome do aluno"><input id="turma" placeholder="Turma (ex.: 208)"><button onclick="start()">ENTRAR NA ESCOLA</button></div></div>
-<div id="hud"><div class="box status" id="status">Aluno<br>Entrada</div><div class="box xp" id="xp">⭐ 50 XP • 🪙 0 • Nv. 1</div><div class="box mission" id="mission">🎮 V6.4 • Escola 3D com personagens GLB • explore e complete as salas</div><div id="progress"><i id="progressFill"></i></div><div class="cross">+</div><div id="pcHint">🖱️ Clique: câmera • WASD/Setas: mover • Shift: correr • E: interagir • ESC: mouse</div><div id="joy"><div id="knob"></div></div><div id="look"></div><button id="exitRoom">VOLTAR AO CORREDOR</button><button id="interact">FALAR</button></div>
+</style>
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/"
+  }
+}
+</script>
+</head><body>
+<div id="login"><div class="card"><h1>🏫 MATH SCHOOL 3D <small>V6.4.1</small></h1><p>Entre na escola, encontre o diretor e escolha sua sala.</p><input id="name" placeholder="Nome do aluno"><input id="turma" placeholder="Turma (ex.: 208)"><button onclick="start()">ENTRAR NA ESCOLA</button></div></div>
+<div id="hud"><div class="box status" id="status">Aluno<br>Entrada</div><div class="box xp" id="xp">⭐ 50 XP • 🪙 0 • Nv. 1</div><div class="box mission" id="mission">🎮 V6.4.1 • Escola 3D com personagens GLB • explore e complete as salas</div><div id="progress"><i id="progressFill"></i></div><div class="cross">+</div><div id="pcHint">🖱️ Clique: câmera • WASD/Setas: mover • Shift: correr • E: interagir • ESC: mouse</div><div id="joy"><div id="knob"></div></div><div id="look"></div><button id="exitRoom">VOLTAR AO CORREDOR</button><button id="interact">FALAR</button></div>
 <div id="dialog"><b id="dt">Diretor</b><p id="dq"></p><div id="answers"></div><div class="small">Responda para ganhar XP.</div></div>
 <script src="/socket.io/socket.io.js"></script>
 <script type="module">
-import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js';
-import { GLTFLoader } from 'https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/loaders/GLTFLoader.js';
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 const socket=io(); let started=false,xp=50,coins=0,level=1,name='Aluno',turma='---',near=null,challenge=null,challengeType=null; const progress={PA:0,PG:0,Diretor:0,Biblioteca:0,Laboratório:0};
 const scene=new THREE.Scene(); scene.background=new THREE.Color(0x86b9dc); scene.fog=new THREE.Fog(0x86b9dc,45,105);
 const camera=new THREE.PerspectiveCamera(72,innerWidth/innerHeight,.1,140); camera.position.set(0,1.65,30);
@@ -96,15 +105,17 @@ function human(opts={}){
   g.userData.limbs={armL,armR,legL,legR};g.userData.walkPhase=Math.random()*6.28;return g;
 }
 
-const gltfLoader=new GLTFLoader();
+let gltfLoader=null;
+try { gltfLoader=new GLTFLoader(); } catch(e) { console.warn('GLTFLoader indisponível; usando personagens reserva.',e); }
 function upgradeToGLB(group,url,scale=1){
-  gltfLoader.load(url,(gltf)=>{
+  if(!gltfLoader){ console.warn('GLB ignorado; personagem procedural mantido:',url); return; }
+  try { gltfLoader.load(url,(gltf)=>{
     // mantém o Group original para IA/posição; troca apenas o corpo visual
     for(const ch of [...group.children]){ if(!ch.userData.keepUI) ch.visible=false; }
     const model=gltf.scene; model.scale.setScalar(scale); model.position.y=0;
     model.traverse(o=>{if(o.isMesh){o.frustumCulled=true; o.castShadow=false; o.receiveShadow=false;}});
     group.add(model); group.userData.glbModel=model; group.userData.isGLB=true;
-  },undefined,(err)=>console.warn('GLB fallback procedural:',url,err));
+  },undefined,(err)=>console.warn('GLB fallback procedural:',url,err)); } catch(err) { console.warn('Falha GLB; fallback mantido:',url,err); }
 }
 
 function animateWalk(g,dt,moving=true){if(g.userData.glbModel){g.userData.walkPhase=(g.userData.walkPhase||0)+dt*(moving?7:3);g.userData.glbModel.position.y=moving?Math.abs(Math.sin(g.userData.walkPhase))*.018:0;}let L=g.userData.limbs;if(!L)return;g.userData.walkPhase+=dt*(moving?7:3);let a=moving?Math.sin(g.userData.walkPhase)*.52:0;L.armL.rotation.x=a;L.armR.rotation.x=-a;L.legL.rotation.x=-a*.65;L.legR.rotation.x=a*.65;if(!moving){L.armL.rotation.x*=.8;L.armR.rotation.x*=.8;L.legL.rotation.x*=.8;L.legR.rotation.x*=.8}}
