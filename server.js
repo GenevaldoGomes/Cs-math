@@ -1,1 +1,13 @@
-const express=require('express'),http=require('http'),path=require('path');const{Server}=require('socket.io');const app=express(),server=http.createServer(app),io=new Server(server);app.use(express.static(path.join(__dirname,'public')));const P=new Map();io.on('connection',s=>{s.on('join',d=>{P.set(s.id,{id:s.id,name:(d.name||'Aluno').slice(0,24),turma:d.turma,xp:0,room:'Portaria'});io.emit('players',[...P.values()])});s.on('state',d=>{let p=P.get(s.id);if(p){Object.assign(p,d);s.broadcast.emit('state',{id:s.id,...d})}});s.on('xp',v=>{let p=P.get(s.id);if(p){p.xp+=(+v||0);io.emit('players',[...P.values()])}});s.on('disconnect',()=>{P.delete(s.id);io.emit('players',[...P.values()])})});server.listen(process.env.PORT||8080,'0.0.0.0');
+const express=require('express');
+const http=require('http');
+const {Server}=require('socket.io');
+const path=require('path');
+const app=express(), server=http.createServer(app), io=new Server(server);
+app.use(express.static(path.join(__dirname,'public')));
+const players={};
+io.on('connection',s=>{
+  s.on('join',p=>{ players[s.id]={id:s.id,name:(p.name||'Aluno').slice(0,18),room:p.room||'---',xp:50}; io.emit('players',Object.values(players));});
+  s.on('xp',xp=>{if(players[s.id]){players[s.id].xp=xp;io.emit('players',Object.values(players));}});
+  s.on('disconnect',()=>{delete players[s.id];io.emit('players',Object.values(players));});
+});
+server.listen(process.env.PORT||8080,'0.0.0.0',()=>console.log('MATH SCHOOL 3D V3 online'));
