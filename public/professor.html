@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CS:MATH — Painel do Professor</title>
+<script src="/socket.io/socket.io.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Quantico:wght@400;700&display=swap');
+:root{--bg:#091015;--panel:#111a20;--border:#2c3b45;--orange:#f2a23b;--green:#59c56f;--red:#df5b5b;--text:#e9f0f5;--muted:#84949e}
+*{box-sizing:border-box}body{margin:0;background:linear-gradient(180deg,#0d151a,#060a0d);color:var(--text);font-family:Quantico,sans-serif;padding:20px}
+.wrap{max-width:1200px;margin:auto}.head{display:flex;justify-content:space-between;gap:15px;align-items:center;border-left:5px solid var(--orange);background:var(--panel);border-top:1px solid var(--border);border-right:1px solid var(--border);border-bottom:1px solid var(--border);padding:18px}
+h1{font-size:1.3rem;margin:0;color:var(--orange)}.muted{color:var(--muted);font-size:.72rem}.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:14px 0}
+.card{background:var(--panel);border:1px solid var(--border);padding:16px}.card b{display:block;font-size:1.5rem;color:var(--orange)}.card span{font-size:.65rem;color:var(--muted)}
+.filters{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0}.filters button{background:#0a1115;border:1px solid var(--border);color:var(--muted);font-family:inherit;padding:8px 10px;cursor:pointer}.filters button.active{border-color:var(--orange);color:var(--orange)}
+.tableWrap{overflow:auto;border:1px solid var(--border);background:#0c1317}table{width:100%;border-collapse:collapse;min-width:850px}th,td{padding:11px 10px;border-bottom:1px solid #202c33;text-align:left;font-size:.75rem}th{color:var(--muted);font-size:.63rem;text-transform:uppercase;background:#0b1115}
+.good{color:var(--green)}.bad{color:var(--red)}.bar{height:7px;background:#182229;width:110px;display:inline-block;vertical-align:middle;margin-right:6px}.fill{height:100%;background:var(--orange)}
+.back{color:var(--orange);text-decoration:none;font-size:.7rem}
+@media(max-width:700px){.cards{grid-template-columns:1fr 1fr}.head{align-items:flex-start;flex-direction:column}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="head">
+    <div><h1>CS:MATH — CENTRAL DO PROFESSOR</h1><div class="muted">Acompanhamento em tempo real das turmas 206, 207 e 208</div></div>
+    <a class="back" href="/">← VOLTAR AO JOGO</a>
+  </div>
+
+  <div class="cards">
+    <div class="card"><b id="online">0</b><span>ALUNOS ONLINE</span></div>
+    <div class="card"><b id="avgAccuracy">0%</b><span>PRECISÃO MÉDIA</span></div>
+    <div class="card"><b id="totalAnswers">0</b><span>RESPOSTAS REGISTRADAS</span></div>
+    <div class="card"><b id="topClass">—</b><span>TURMA COM MAIOR XP</span></div>
+  </div>
+
+  <div class="filters">
+    <button class="active" onclick="setFilter('geral',this)">GERAL</button>
+    <button onclick="setFilter('206',this)">206</button>
+    <button onclick="setFilter('207',this)">207</button>
+    <button onclick="setFilter('208',this)">208</button>
+  </div>
+
+  <div class="tableWrap">
+    <table>
+      <thead><tr><th>#</th><th>Aluno</th><th>Turma</th><th>XP</th><th>Patente</th><th>Acertos</th><th>Erros</th><th>Precisão</th><th>Streak</th><th>Rodada</th></tr></thead>
+      <tbody id="rows"></tbody>
+    </table>
+  </div>
+</div>
+<script>
+const socket=io();let data=[];let filter='geral';
+socket.emit('teacherJoin');
+socket.on('teacherData',d=>{data=d.players||[];render();summary(d.summary||{})});
+function setFilter(f,b){filter=f;document.querySelectorAll('.filters button').forEach(x=>x.classList.remove('active'));b.classList.add('active');render()}
+function render(){
+ const arr=(filter==='geral'?data:data.filter(p=>p.turma===filter)).sort((a,b)=>b.xp-a.xp);
+ const tbody=document.getElementById('rows');tbody.innerHTML='';
+ arr.forEach((p,i)=>{
+  const total=p.hits+p.misses,acc=total?Math.round(p.hits/total*100):0;
+  tbody.innerHTML+=`<tr><td>${i+1}</td><td>${p.nome}</td><td>${p.turma}</td><td>${p.xp}</td><td>${p.rank}</td><td class="good">${p.hits}</td><td class="bad">${p.misses}</td><td><span class="bar"><span class="fill" style="width:${acc}%"></span></span>${acc}%</td><td>${p.streak}</td><td>${p.round}</td></tr>`;
+ });
+}
+function summary(s){
+ document.getElementById('online').textContent=s.online||0;
+ document.getElementById('avgAccuracy').textContent=(s.avgAccuracy||0)+'%';
+ document.getElementById('totalAnswers').textContent=s.totalAnswers||0;
+ document.getElementById('topClass').textContent=s.topClass||'—';
+}
+</script>
+</body>
+</html>
