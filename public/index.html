@@ -12,7 +12,7 @@ canvas{display:block}#login{position:fixed;inset:0;z-index:20;display:flex;align
 @media(pointer:fine){#joy,#look{display:none!important}#pcHint{display:block}}
 @media(max-width:650px){.mission{top:105px;max-width:68vw;font-size:11px}.box{padding:9px 12px}.xp{font-size:17px}}
 </style></head><body>
-<div id="login"><div class="card"><h1>🏫 MATH SCHOOL 3D <small>V6.3</small></h1><p>Entre na escola, encontre o diretor e escolha sua sala.</p><input id="name" placeholder="Nome do aluno"><input id="turma" placeholder="Turma (ex.: 208)"><button onclick="start()">ENTRAR NA ESCOLA</button></div></div>
+<div id="login"><div class="card"><h1>🏫 MATH SCHOOL 3D <small>V6.3.1</small></h1><p>Entre na escola, encontre o diretor e escolha sua sala.</p><input id="name" placeholder="Nome do aluno"><input id="turma" placeholder="Turma (ex.: 208)"><button onclick="start()">ENTRAR NA ESCOLA</button></div></div>
 <div id="hud"><div class="box status" id="status">Aluno<br>Entrada</div><div class="box xp" id="xp">⭐ 50 XP • 🪙 0 • Nv. 1</div><div class="box mission" id="mission">🎯 Explore a escola • encontre o Diretor • complete as salas</div><div id="progress"><i id="progressFill"></i></div><div class="cross">+</div><div id="pcHint">🖱️ Clique: câmera • WASD/Setas: mover • Shift: correr • E: interagir • ESC: mouse</div><div id="joy"><div id="knob"></div></div><div id="look"></div><button id="exitRoom">VOLTAR AO CORREDOR</button><button id="interact">FALAR</button></div>
 <div id="dialog"><b id="dt">Diretor</b><p id="dq"></p><div id="answers"></div><div class="small">Responda para ganhar XP.</div></div>
 <script src="/socket.io/socket.io.js"></script>
@@ -36,16 +36,35 @@ for(let x=-20;x<=20;x+=5)box(x,-.005,0,.035,.025,77,0xb8b8b0,false);
 for(let z of [-6,6]){box(-20,.45,z,2.8,.18,.65,0x7b573c,false);box(20,.45,z,2.8,.18,.65,0x7b573c,false)}
 box(20.2,1.0,-12,1.2,2,.7,0xb9d7df,false); box(20.2,1.6,-12,.8,.35,.72,0x5aa4c4,false);
 
-for(let z=-30;z<=25;z+=11){box(-10.5,2.5,z,.25,5,8,0xf1eee4);box(10.5,2.5,z,.25,5,8,0xf1eee4)}
-// central hall walls / doors
-for(let z=-31;z<=22;z+=11){box(-15.8,2.5,z,12,.3,.3,0x4f7c91,false);box(15.8,2.5,z,12,.3,.3,0x4f7c91,false)}
+// V6.3.1: paredes contínuas e portas arquitetônicas — sem buracos no corredor
+const wallColor=0xe9e7df, trimColor=0x365f72;
+function corridorWall(side){
+  const x=side*10.5, doorZ=[20,9], halfDoor=1.45, zMin=-35, zMax=35;
+  let cuts=[zMin]; doorZ.slice().sort((a,b)=>a-b).forEach(z=>cuts.push(z-halfDoor,z+halfDoor)); cuts.push(zMax);
+  for(let i=0;i<cuts.length-1;i+=2){let a=cuts[i],b=cuts[i+1]; if(b>a) box(x,2.5,(a+b)/2,.32,5,b-a,wallColor,true)}
+  // vergas fecham a parede acima das portas
+  doorZ.forEach(z=>{box(x,4.15,z,.34,1.7,2.9,wallColor,true);box(x,3.18,z,.38,.16,3.05,trimColor,false)});
+}
+corridorWall(-1); corridorWall(1);
+// rodapé e faixa contínuos dão acabamento realista
+box(-10.28,.18,0,.10,.30,70,0x9b9b93,false); box(10.28,.18,0,.10,.30,70,0x9b9b93,false);
+box(-10.28,2.75,0,.10,.22,70,trimColor,false); box(10.28,2.75,0,.10,.22,70,trimColor,false);
+// divisórias externas das salas, agora encostando corretamente nas paredes
+for(let z of [25.5,14.5,3.5]){box(-16.25,2.5,z,11.5,5,.30,wallColor,true);box(16.25,2.5,z,11.5,5,.30,wallColor,true)}
 // rooms labels
-sign('SALA 1 • PA',-10.25,3.6,20,Math.PI/2,'#1478a5'); sign('SALA 2 • PG',10.25,3.6,20,-Math.PI/2,'#58a72c');
-sign('📚 BIBLIOTECA',-10.25,3.6,9,Math.PI/2,'#8a4aa8');sign('🔬 LABORATÓRIO',10.25,3.6,9,-Math.PI/2,'#287a83');
+sign('SALA 1 • PA',-10.31,3.65,20,Math.PI/2,'#1478a5'); sign('SALA 2 • PG',10.31,3.65,20,-Math.PI/2,'#58a72c');
+sign('📚 BIBLIOTECA',-10.31,3.65,9,Math.PI/2,'#8a4aa8');sign('🔬 LABORATÓRIO',10.31,3.65,9,-Math.PI/2,'#287a83');
 sign('DIREÇÃO',0,3.6,-37.75,0,'#9a4242');sign('MATH SCHOOL',0,6.5,-37.7,0,'#164e70');
-// doors visual
-box(-10.35,1.35,20,0.18,2.7,2.2,0x2e83aa,false);box(10.35,1.35,20,.18,2.7,2.2,0x68aa3b,false);
-box(-10.35,1.35,9,.18,2.7,2.2,0x8452a0,false);box(10.35,1.35,9,.18,2.7,2.2,0x3c8d91,false);
+// portas com moldura, folha recuada, maçaneta e abertura livre
+function schoolDoor(x,z,color,side){
+  const dx=side*.10;
+  box(x+dx,1.45,z,.12,2.90,2.55,color,false);
+  box(x+side*.18,1.48,z-1.38,.18,3.05,.14,0x4b4b48,false); box(x+side*.18,1.48,z+1.38,.18,3.05,.14,0x4b4b48,false);
+  box(x+side*.18,3.00,z,.18,.16,2.90,0x4b4b48,false);
+  let knob=new THREE.Mesh(new THREE.SphereGeometry(.07,8,6),mat(0xd6b24c));knob.position.set(x-side*.04,1.45,z+.92);scene.add(knob);
+}
+schoolDoor(-10.5,20,0x2e83aa,-1); schoolDoor(10.5,20,0x68aa3b,1);
+schoolDoor(-10.5,9,0x8452a0,-1); schoolDoor(10.5,9,0x3c8d91,1);
 // furniture
 function desk(x,z,side){box(x,.65,z,2.2,.12,1.1,0x9a633b,false);box(x-.8,.3,z,.12,.6,.12,0x463426,false);box(x+.8,.3,z,.12,.6,.12,0x463426,false)}
 for(let z=15;z<=26;z+=3.5)for(let x of [-17,-14,-7,-4])desk(x,z);
@@ -95,6 +114,8 @@ const zones=[{type:'PA',p:new THREE.Vector3(-9,0,20)},{type:'PG',p:new THREE.Vec
 let currentRoom=null; const corridorReturn=new THREE.Vector3(0,1.65,22);
 function roomShell(cx,cz,title,color,formula){
   box(cx,-.25,cz,18,.5,16,0xe4e0d5,false);box(cx-9,2.5,cz,.3,5,16,0xf5f2e9);box(cx+9,2.5,cz,.3,5,16,0xf5f2e9);box(cx,2.5,cz-8,18,5,.3,0xf5f2e9);box(cx,5.05,cz,18,.2,16,0xf7f4ed,false);
+  // parede frontal completa com vão central de porta
+  box(cx-5.25,2.5,cz+8,7.5,5,.3,0xf5f2e9);box(cx+5.25,2.5,cz+8,7.5,5,.3,0xf5f2e9);box(cx,4.15,cz+8,3,1.7,.3,0xf5f2e9);
   box(cx,2.3,cz-7.75,7,2.5,.12,0x214b3b,false);sign(title,cx,4.15,cz-7.55,0,color);sign(formula,cx,2.3,cz-7.65,0,'#214b3b');
   for(let rz=-3;rz<=4;rz+=3.3)for(let rx=-5;rx<=5;rx+=3.3){desk(cx+rx,cz+rz);}
   // mesa e professor
