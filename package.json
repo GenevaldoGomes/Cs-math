@@ -1,6 +1,6 @@
 {
-  "name": "math-school-3d-v3",
-  "version": "3.0.0",
+  "name": "math-school-3d-v4",
+  "version": "4.0.0",
   "private": true,
   "scripts": {
     "start": "node server.js"

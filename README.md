@@ -1,17 +1,18 @@
-# MATH SCHOOL 3D V3
-Versão mobile-first da escola virtual de Matemática.
+# MATH SCHOOL 3D V4 — Escola Viva
 
-## V3
-- Escola redesenhada e mais reconhecível
-- Salas PA e PG com mobiliário e quadros
-- Biblioteca, laboratório e pátio
-- Diretor caminhando com placa menor
-- Interação contextual FALAR/ENTRAR
-- Desafios por ambiente e XP
-- Controle por joystick + câmera por toque
-- Painel do professor em /professor.html
-- Socket.IO para lista/XP online
+Versão V4 otimizada para celular.
+
+## Novidades
+- corredor com teto, luminárias, janelas e identidade visual
+- NPCs/alunos circulando pela escola
+- diretor caminhando e oferecendo desafio
+- salas PA e PG, biblioteca, laboratório e pátio
+- XP e missões
+- joystick e câmera touch
+- mantém Socket.IO e painel do professor
 
 ## Railway
-Substitua package.json, server.js, README.md e a pasta public no mesmo repositório.
-O Railway deve redeployar automaticamente e o domínio pode continuar o mesmo.
+Use o mesmo projeto/repositório. Substitua os arquivos da V3 pelos desta versão e faça commit. O Railway deve redeployar automaticamente.
+
+Start: `npm start`
+Porta: `process.env.PORT || 8080`
