@@ -1,17 +1,9 @@
-# MATH SCHOOL 3D V6.1
+# MATH SCHOOL 3D V6.2
 
-Correção de navegação para PC sem remover os controles mobile.
-
-## PC
-- Clique no jogo: captura o mouse
-- W/A/S/D ou setas: movimentação
-- Mouse: olhar ao redor
-- E: interagir / entrar / desafio
-- ESC: liberar o mouse
-
-## Celular
-- Joystick esquerdo: movimentação
-- Arraste no lado direito: câmera
-- Botões de interação permanecem ativos
-
-Mantém campanhas PA/PG, XP, moedas, níveis, diretor e salas da V6.
+Atualização sobre a V6.1:
+- personagens low-poly com proporções mais humanas: cabeça, cabelo, olhos, nariz, pescoço, tronco, braços, mãos, pernas e pés;
+- animação procedural de caminhada em braços e pernas;
+- diretor não gira mais no lugar;
+- diretor escolhe destinos aleatórios no corredor, caminha até eles, para por alguns instantes e segue para outro ponto;
+- controles PC e celular da V6.1 preservados;
+- campanhas PA/PG, XP, moedas e níveis preservados.
