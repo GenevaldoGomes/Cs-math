@@ -13,11 +13,12 @@ canvas{display:block}#login{position:fixed;inset:0;z-index:20;display:flex;align
 @media(max-width:650px){.mission{top:105px;max-width:68vw;font-size:11px}.box{padding:9px 12px}.xp{font-size:17px}}
 </style></head><body>
 <div id="login"><div class="card"><h1>🏫 MATH SCHOOL 3D <small>V6.3.1</small></h1><p>Entre na escola, encontre o diretor e escolha sua sala.</p><input id="name" placeholder="Nome do aluno"><input id="turma" placeholder="Turma (ex.: 208)"><button onclick="start()">ENTRAR NA ESCOLA</button></div></div>
-<div id="hud"><div class="box status" id="status">Aluno<br>Entrada</div><div class="box xp" id="xp">⭐ 50 XP • 🪙 0 • Nv. 1</div><div class="box mission" id="mission">🎯 Explore a escola • encontre o Diretor • complete as salas</div><div id="progress"><i id="progressFill"></i></div><div class="cross">+</div><div id="pcHint">🖱️ Clique: câmera • WASD/Setas: mover • Shift: correr • E: interagir • ESC: mouse</div><div id="joy"><div id="knob"></div></div><div id="look"></div><button id="exitRoom">VOLTAR AO CORREDOR</button><button id="interact">FALAR</button></div>
+<div id="hud"><div class="box status" id="status">Aluno<br>Entrada</div><div class="box xp" id="xp">⭐ 50 XP • 🪙 0 • Nv. 1</div><div class="box mission" id="mission">🎮 V6.4 • Escola 3D com personagens GLB • explore e complete as salas</div><div id="progress"><i id="progressFill"></i></div><div class="cross">+</div><div id="pcHint">🖱️ Clique: câmera • WASD/Setas: mover • Shift: correr • E: interagir • ESC: mouse</div><div id="joy"><div id="knob"></div></div><div id="look"></div><button id="exitRoom">VOLTAR AO CORREDOR</button><button id="interact">FALAR</button></div>
 <div id="dialog"><b id="dt">Diretor</b><p id="dq"></p><div id="answers"></div><div class="small">Responda para ganhar XP.</div></div>
 <script src="/socket.io/socket.io.js"></script>
 <script type="module">
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js';
+import { GLTFLoader } from 'https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/loaders/GLTFLoader.js';
 const socket=io(); let started=false,xp=50,coins=0,level=1,name='Aluno',turma='---',near=null,challenge=null,challengeType=null; const progress={PA:0,PG:0,Diretor:0,Biblioteca:0,Laboratório:0};
 const scene=new THREE.Scene(); scene.background=new THREE.Color(0x86b9dc); scene.fog=new THREE.Fog(0x86b9dc,45,105);
 const camera=new THREE.PerspectiveCamera(72,innerWidth/innerHeight,.1,140); camera.position.set(0,1.65,30);
@@ -78,7 +79,7 @@ for(let z=3;z<13;z+=3)box(-17,1.3,z,5,2.6,.5,0x734b2f,false);
 for(let z=3;z<13;z+=3)box(16,.8,z,6,1.6,1.1,0xd7d7d7,false);
 // courtyard at front
 box(0,.01,35,20,.03,6,0x6c9c61,false);sign('🏀 PÁTIO / QUADRA',0,2.8,37.8,0,'#b67823');
-// V6.3: escola imersiva - NPCs vivos, diretor patrulhando, colisão deslizante, sprint e progresso salvo
+// V6.4: personagens locais GLB/GLTF + escola imersiva, sem depender de modelos externos
 function part(w,h,d,c,x,y,z){let m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat(c));m.position.set(x,y,z);return m}
 function human(opts={}){
   const g=new THREE.Group(), skin=opts.skin||0xd39a72, shirt=opts.shirt||0x315b85, pants=opts.pants||0x263238, hairC=opts.hair||0x3b2a20;
@@ -94,9 +95,21 @@ function human(opts={}){
   legL.add(part(.25,.82,.28,pants,0,-.40,0),part(.29,.16,.48,0x242424,0,-.84,-.08));legR.add(part(.25,.82,.28,pants,0,-.40,0),part(.29,.16,.48,0x242424,0,-.84,-.08));g.add(legL,legR);
   g.userData.limbs={armL,armR,legL,legR};g.userData.walkPhase=Math.random()*6.28;return g;
 }
-function animateWalk(g,dt,moving=true){let L=g.userData.limbs;if(!L)return;g.userData.walkPhase+=dt*(moving?7:3);let a=moving?Math.sin(g.userData.walkPhase)*.52:0;L.armL.rotation.x=a;L.armR.rotation.x=-a;L.legL.rotation.x=-a*.65;L.legR.rotation.x=a*.65;if(!moving){L.armL.rotation.x*=.8;L.armR.rotation.x*=.8;L.legL.rotation.x*=.8;L.legR.rotation.x*=.8}}
+
+const gltfLoader=new GLTFLoader();
+function upgradeToGLB(group,url,scale=1){
+  gltfLoader.load(url,(gltf)=>{
+    // mantém o Group original para IA/posição; troca apenas o corpo visual
+    for(const ch of [...group.children]){ if(!ch.userData.keepUI) ch.visible=false; }
+    const model=gltf.scene; model.scale.setScalar(scale); model.position.y=0;
+    model.traverse(o=>{if(o.isMesh){o.frustumCulled=true; o.castShadow=false; o.receiveShadow=false;}});
+    group.add(model); group.userData.glbModel=model; group.userData.isGLB=true;
+  },undefined,(err)=>console.warn('GLB fallback procedural:',url,err));
+}
+
+function animateWalk(g,dt,moving=true){if(g.userData.glbModel){g.userData.walkPhase=(g.userData.walkPhase||0)+dt*(moving?7:3);g.userData.glbModel.position.y=moving?Math.abs(Math.sin(g.userData.walkPhase))*.018:0;}let L=g.userData.limbs;if(!L)return;g.userData.walkPhase+=dt*(moving?7:3);let a=moving?Math.sin(g.userData.walkPhase)*.52:0;L.armL.rotation.x=a;L.armR.rotation.x=-a;L.legL.rotation.x=-a*.65;L.legR.rotation.x=a*.65;if(!moving){L.armL.rotation.x*=.8;L.armR.rotation.x*=.8;L.legL.rotation.x*=.8;L.legR.rotation.x*=.8}}
 const director=human({shirt:0x18365c,pants:0x1b2638,hair:0x2c211b});director.scale.set(1.08,1.08,1.08);director.position.set(0,0,-27);scene.add(director);
-const label=sign('DIRETOR',0,0,0,0,'#8f3c3c');label.scale.set(.34,.34,.34);director.add(label);label.position.set(0,3.0,.05);
+const label=sign('DIRETOR',0,0,0,0,'#8f3c3c');label.scale.set(.34,.34,.34);label.userData.keepUI=true;director.add(label);label.position.set(0,3.0,.05);upgradeToGLB(director,'/models/director.glb',1.0);
 const directorAI={target:new THREE.Vector3(0,0,-20),wait:0,waitGoal:1.5,speed:1.45};
 function chooseDirectorTarget(){directorAI.target.set(THREE.MathUtils.randFloat(-7.5,7.5),0,THREE.MathUtils.randFloat(-32,15));directorAI.wait=0;directorAI.waitGoal=THREE.MathUtils.randFloat(1.2,3.5)}
 function updateDirector(dt){
@@ -105,7 +118,7 @@ function updateDirector(dt){
   let step=Math.min(dist,directorAI.speed*dt);director.position.x+=dx/dist*step;director.position.z+=dz/dist*step;director.rotation.y=Math.atan2(-dx,-dz);animateWalk(director,dt,true);
 }
 // alunos com proporções humanas e caminhada suave
-const npcs=[];function makeStudent(x,z,c){let g=human({shirt:c,pants:0x263238,skin:[0xc98f68,0xd9a17d,0x9b674b][Math.floor(Math.random()*3)],hair:[0x2a211c,0x4b3023,0x171717][Math.floor(Math.random()*3)]});g.scale.set(.92,.92,.92);g.position.set(x,0,z);scene.add(g);npcs.push({g,baseZ:z,baseX:x,s:Math.random()>.5?1:-1,phase:Math.random()*6.28});return g}
+const npcs=[];function makeStudent(x,z,c){let g=human({shirt:c,pants:0x263238,skin:[0xc98f68,0xd9a17d,0x9b674b][Math.floor(Math.random()*3)],hair:[0x2a211c,0x4b3023,0x171717][Math.floor(Math.random()*3)]});g.scale.set(.92,.92,.92);g.position.set(x,0,z);scene.add(g);let urls=['/models/student_blue.glb','/models/student_green.glb','/models/student_purple.glb'];upgradeToGLB(g,urls[npcs.length%urls.length],1.0);npcs.push({g,baseZ:z,baseX:x,s:Math.random()>.5?1:-1,phase:Math.random()*6.28});return g}
 makeStudent(-5,-5,0x2f80ed);makeStudent(5,3,0x27ae60);makeStudent(-4,12,0x8e44ad);makeStudent(4,-15,0xe67e22);
 let dirT=0;
 // interactions zones
