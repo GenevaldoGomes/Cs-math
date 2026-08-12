@@ -59,20 +59,36 @@ for(let z=3;z<13;z+=3)box(-17,1.3,z,5,2.6,.5,0x734b2f,false);
 for(let z=3;z<13;z+=3)box(16,.8,z,6,1.6,1.1,0xd7d7d7,false);
 // courtyard at front
 box(0,.01,35,20,.03,6,0x6c9c61,false);sign('🏀 PÁTIO / QUADRA',0,2.8,37.8,0,'#b67823');
-// V5: diretor humanoide low-poly com braços e pernas
+// V6.2: personagens low-poly mais humanos + diretor com caminhada aleatória
 function part(w,h,d,c,x,y,z){let m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat(c));m.position.set(x,y,z);return m}
-const director=new THREE.Group();
-director.add(part(.9,1.15,.48,0x18365c,0,1.35,0));
-director.add(part(.28,.95,.3,0x1b2638,-.22,.38,0),part(.28,.95,.3,0x1b2638,.22,.38,0));
-director.add(part(.22,.9,.25,0xd39a72,-.62,1.35,0),part(.22,.9,.25,0xd39a72,.62,1.35,0));
-const head=new THREE.Mesh(new THREE.SphereGeometry(.36,16,12),mat(0xd39a72));head.position.y=2.18;director.add(head);
-const hair=new THREE.Mesh(new THREE.SphereGeometry(.37,16,8,0,Math.PI*2,0,Math.PI/2),mat(0x3c2a1f));hair.position.y=2.32;director.add(hair);
-director.position.set(0,0,-27);scene.add(director);
-const label=sign('DIRETOR',0,0,0,0,'#8f3c3c'); label.scale.set(.42,.42,.42); director.add(label); label.position.set(0,2.9,0);
-let dirT=0;
-// NPCs V5
-const npcs=[];function makeStudent(x,z,c){let g=new THREE.Group();g.add(part(.65,.95,.4,c,0,1.15,0),part(.2,.75,.22,0x263238,-.18,.35,0),part(.2,.75,.22,0x263238,.18,.35,0));let h=new THREE.Mesh(new THREE.SphereGeometry(.3,12,10),mat(0xc98f68));h.position.y=1.9;g.add(h);g.position.set(x,0,z);scene.add(g);npcs.push({g,baseZ:z,s:Math.random()>.5?1:-1});return g}
+function human(opts={}){
+  const g=new THREE.Group(), skin=opts.skin||0xd39a72, shirt=opts.shirt||0x315b85, pants=opts.pants||0x263238, hairC=opts.hair||0x3b2a20;
+  const torso=part(.72,1.0,.38,shirt,0,1.28,0);g.add(torso);
+  const neck=part(.18,.16,.18,skin,0,1.87,0);g.add(neck);
+  const head=new THREE.Mesh(new THREE.SphereGeometry(.31,16,12),mat(skin));head.position.y=2.17;g.add(head);
+  const hair=new THREE.Mesh(new THREE.SphereGeometry(.315,16,10,0,Math.PI*2,0,Math.PI*.52),mat(hairC));hair.position.y=2.27;g.add(hair);
+  const nose=new THREE.Mesh(new THREE.SphereGeometry(.045,8,6),mat(skin));nose.position.set(0,2.16,-.30);g.add(nose);
+  const eyeMat=mat(0x202020);for(const x of [-.105,.105]){let e=new THREE.Mesh(new THREE.SphereGeometry(.026,7,5),eyeMat);e.position.set(x,2.22,-.295);g.add(e)}
+  const armL=new THREE.Group(),armR=new THREE.Group();armL.position.set(-.48,1.68,0);armR.position.set(.48,1.68,0);
+  armL.add(part(.20,.72,.22,shirt,0,-.34,0),part(.18,.18,.18,skin,0,-.76,0));armR.add(part(.20,.72,.22,shirt,0,-.34,0),part(.18,.18,.18,skin,0,-.76,0));g.add(armL,armR);
+  const legL=new THREE.Group(),legR=new THREE.Group();legL.position.set(-.20,.82,0);legR.position.set(.20,.82,0);
+  legL.add(part(.25,.82,.28,pants,0,-.40,0),part(.29,.16,.48,0x242424,0,-.84,-.08));legR.add(part(.25,.82,.28,pants,0,-.40,0),part(.29,.16,.48,0x242424,0,-.84,-.08));g.add(legL,legR);
+  g.userData.limbs={armL,armR,legL,legR};g.userData.walkPhase=Math.random()*6.28;return g;
+}
+function animateWalk(g,dt,moving=true){let L=g.userData.limbs;if(!L)return;g.userData.walkPhase+=dt*(moving?7:3);let a=moving?Math.sin(g.userData.walkPhase)*.52:0;L.armL.rotation.x=a;L.armR.rotation.x=-a;L.legL.rotation.x=-a*.65;L.legR.rotation.x=a*.65;if(!moving){L.armL.rotation.x*=.8;L.armR.rotation.x*=.8;L.legL.rotation.x*=.8;L.legR.rotation.x*=.8}}
+const director=human({shirt:0x18365c,pants:0x1b2638,hair:0x2c211b});director.scale.set(1.08,1.08,1.08);director.position.set(0,0,-27);scene.add(director);
+const label=sign('DIRETOR',0,0,0,0,'#8f3c3c');label.scale.set(.34,.34,.34);director.add(label);label.position.set(0,3.0,.05);
+const directorAI={target:new THREE.Vector3(0,0,-20),wait:0,speed:1.35};
+function chooseDirectorTarget(){directorAI.target.set(THREE.MathUtils.randFloat(-7.5,7.5),0,THREE.MathUtils.randFloat(-32,15));directorAI.wait=0}
+function updateDirector(dt){
+  if(currentRoom)return;let dx=directorAI.target.x-director.position.x,dz=directorAI.target.z-director.position.z,dist=Math.hypot(dx,dz);
+  if(dist<.35){animateWalk(director,dt,false);directorAI.wait+=dt;if(directorAI.wait>THREE.MathUtils.randFloat(1.2,3.0))chooseDirectorTarget();return}
+  let step=Math.min(dist,directorAI.speed*dt);director.position.x+=dx/dist*step;director.position.z+=dz/dist*step;director.rotation.y=Math.atan2(-dx,-dz);animateWalk(director,dt,true);
+}
+// alunos com proporções humanas e caminhada suave
+const npcs=[];function makeStudent(x,z,c){let g=human({shirt:c,pants:0x263238,skin:[0xc98f68,0xd9a17d,0x9b674b][Math.floor(Math.random()*3)],hair:[0x2a211c,0x4b3023,0x171717][Math.floor(Math.random()*3)]});g.scale.set(.92,.92,.92);g.position.set(x,0,z);scene.add(g);npcs.push({g,baseZ:z,baseX:x,s:Math.random()>.5?1:-1,phase:Math.random()*6.28});return g}
 makeStudent(-5,-5,0x2f80ed);makeStudent(5,3,0x27ae60);makeStudent(-4,12,0x8e44ad);makeStudent(4,-15,0xe67e22);
+let dirT=0;
 // interactions zones
 const zones=[{type:'PA',p:new THREE.Vector3(-9,0,20)},{type:'PG',p:new THREE.Vector3(9,0,20)},{type:'Biblioteca',p:new THREE.Vector3(-9,0,9)},{type:'Laboratório',p:new THREE.Vector3(9,0,9)}];
 // V5: salas funcionais - o aluno entra de verdade no ambiente
@@ -124,8 +140,8 @@ if(isDesktop){
 
 function blocked(pos){let p=new THREE.Box3(new THREE.Vector3(pos.x-.28,.1,pos.z-.28),new THREE.Vector3(pos.x+.28,1.9,pos.z+.28));return coll.some(c=>p.intersectsBox(c))}
 function update(dt){if(isDesktop){moveY=((keys.KeyS||keys.ArrowDown)?1:0)-((keys.KeyW||keys.ArrowUp)?1:0);moveX=((keys.KeyD||keys.ArrowRight)?1:0)-((keys.KeyA||keys.ArrowLeft)?1:0);if(moveX&&moveY){moveX*=.7071;moveY*=.7071}}camera.rotation.order='YXZ';camera.rotation.y=yaw;camera.rotation.x=pitch;let f=new THREE.Vector3(-Math.sin(yaw),0,-Math.cos(yaw)),r=new THREE.Vector3(Math.cos(yaw),0,-Math.sin(yaw));let np=camera.position.clone().addScaledVector(f,-moveY*dt*5).addScaledVector(r,moveX*dt*5);if(currentRoom==='PA'){np.x=Math.max(-53.3,Math.min(-36.7,np.x));np.z=Math.max(-7.2,Math.min(7.2,np.z));camera.position.copy(np)}else if(currentRoom==='PG'){np.x=Math.max(36.7,Math.min(53.3,np.x));np.z=Math.max(-7.2,Math.min(7.2,np.z));camera.position.copy(np)}else{np.x=Math.max(-21.3,Math.min(21.3,np.x));np.z=Math.max(-37,Math.min(38,np.z));if(!blocked(np))camera.position.copy(np)}
-dirT+=dt;director.position.x=Math.sin(dirT*.55)*5;director.position.z=-25+Math.cos(dirT*.55)*3;director.rotation.y=dirT*.55;
-for(let n of npcs){if(!currentRoom){n.g.position.z=n.baseZ+Math.sin(dirT*.45+n.baseZ)*2.5}}
+dirT+=dt;updateDirector(dt);
+for(let n of npcs){if(!currentRoom){let old=n.g.position.z;n.g.position.z=n.baseZ+Math.sin(dirT*.38+n.phase)*2.5;let moving=Math.abs(n.g.position.z-old)>.0001;n.g.rotation.y=(Math.cos(dirT*.38+n.phase)>=0)?Math.PI:0;animateWalk(n.g,dt,moving)}}
 let best=null,bd=999;if(currentRoom){best=currentRoom;bd=2}else{let d=camera.position.distanceTo(director.position);if(d<3){best='Diretor';bd=d}for(let z of zones){let dd=Math.hypot(camera.position.x-z.p.x,camera.position.z-z.p.z);if(dd<3&&dd<bd){best=z.type;bd=dd}}}
 let total=currentRoom&&questions[currentRoom]?questions[currentRoom].length:4;let done=currentRoom?(progress[currentRoom]||0):Math.min(4,(progress.PA||0)+(progress.PG||0));document.getElementById('progressFill').style.width=Math.min(100,done/total*100)+'%';near=best;let ib=document.getElementById('interact');ib.style.display=near?'block':'none';ib.textContent=near==='Diretor'?'FALAR':currentRoom?'DESAFIO':'ENTRAR';
 let area=currentRoom?'Sala '+currentRoom:'Corredor';if(!currentRoom&&camera.position.x<-10)area=camera.position.z>14?'Entrada Sala PA':camera.position.z>3?'Biblioteca':'Ala esquerda';if(!currentRoom&&camera.position.x>10)area=camera.position.z>14?'Entrada Sala PG':camera.position.z>3?'Laboratório':'Ala direita';document.getElementById('status').innerHTML=name+' • '+turma+'<br>'+area}
