@@ -10,4 +10,4 @@ io.on('connection',s=>{
   s.on('xp',xp=>{if(players[s.id]){players[s.id].xp=xp;io.emit('players',Object.values(players));}});
   s.on('disconnect',()=>{delete players[s.id];io.emit('players',Object.values(players));});
 });
-server.listen(process.env.PORT||8080,'0.0.0.0',()=>console.log('MATH SCHOOL 3D V4 online'));
+server.listen(process.env.PORT||8080,'0.0.0.0',()=>console.log('MATH SCHOOL 3D V3 online'));
