@@ -1,0 +1,13 @@
+{
+  "name": "cs-math-v3",
+  "version": "3.0.0",
+  "description": "CS:MATH multiplayer - PA e PG com painel do professor",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.21.2",
+    "socket.io": "^4.8.1"
+  }
+}
