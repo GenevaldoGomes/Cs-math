@@ -1,5 +1,5 @@
 <!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>MATH SCHOOL 3D V5</title><style>
+<title>MATH SCHOOL 3D V6</title><style>
 *{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;font-family:Arial,sans-serif;background:#081827;color:white;touch-action:none}
 canvas{display:block}#login{position:fixed;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;background:linear-gradient(#123d5b,#071827)}
 .card{width:min(92vw,520px);padding:28px;background:#071c2b;border:3px solid #48b6ff;border-radius:25px;box-shadow:0 18px 60px #0008}.card h1{color:#ffd047;font-size:clamp(30px,7vw,52px);margin:0 0 10px}.card input{width:100%;padding:16px;border-radius:12px;border:0;font-size:20px;margin:12px 0}.card button,.action{border:0;border-radius:12px;background:#f4aa27;color:#111;font-weight:800;padding:16px;font-size:18px}
@@ -8,16 +8,16 @@ canvas{display:block}#login{position:fixed;inset:0;z-index:20;display:flex;align
 #look{pointer-events:auto;position:absolute;right:0;bottom:0;width:48%;height:72%}
 #interact{pointer-events:auto;position:absolute;right:24px;bottom:42px;border:0;border-radius:22px;min-width:112px;height:70px;padding:0 18px;background:#f4aa27ee;font-weight:900;display:none;box-shadow:0 8px 24px #0006} #exitRoom{pointer-events:auto;position:absolute;right:24px;bottom:124px;border:0;border-radius:16px;padding:14px 18px;background:#2f80ed;color:#fff;font-weight:900;display:none}
 #dialog{position:fixed;z-index:12;left:50%;bottom:24px;transform:translateX(-50%);width:min(92vw,620px);background:#071c2bf2;border:2px solid #48b6ff;border-radius:18px;padding:18px;display:none}
-#answers{display:grid;grid-template-columns:1fr 1fr;gap:8px}#answers button{padding:12px;border:0;border-radius:9px;font-weight:bold}.small{opacity:.8;font-size:13px}
+#progress{position:absolute;left:50%;top:78px;transform:translateX(-50%);width:min(45vw,430px);height:10px;background:#0006;border-radius:8px;overflow:hidden}#progress i{display:block;height:100%;width:0;background:#ffd047;transition:.3s}#answers{display:grid;grid-template-columns:1fr 1fr;gap:8px}#answers button{padding:12px;border:0;border-radius:9px;font-weight:bold}.small{opacity:.8;font-size:13px}
 @media(max-width:650px){.mission{top:105px;max-width:75vw;font-size:12px}.box{padding:9px 12px}.xp{font-size:17px}}
 </style></head><body>
-<div id="login"><div class="card"><h1>🏫 MATH SCHOOL 3D <small>V5</small></h1><p>Entre na escola, encontre o diretor e escolha sua sala.</p><input id="name" placeholder="Nome do aluno"><input id="turma" placeholder="Turma (ex.: 208)"><button onclick="start()">ENTRAR NA ESCOLA</button></div></div>
-<div id="hud"><div class="box status" id="status">Aluno<br>Entrada</div><div class="box xp" id="xp">⭐ 50 XP</div><div class="box mission" id="mission">V5 • MISSÃO: explore a escola, entre em PA/PG ou encontre o Diretor.</div><div class="cross">+</div><div id="joy"><div id="knob"></div></div><div id="look"></div><button id="exitRoom">VOLTAR AO CORREDOR</button><button id="interact">FALAR</button></div>
+<div id="login"><div class="card"><h1>🏫 MATH SCHOOL 3D <small>V6</small></h1><p>Entre na escola, encontre o diretor e escolha sua sala.</p><input id="name" placeholder="Nome do aluno"><input id="turma" placeholder="Turma (ex.: 208)"><button onclick="start()">ENTRAR NA ESCOLA</button></div></div>
+<div id="hud"><div class="box status" id="status">Aluno<br>Entrada</div><div class="box xp" id="xp">⭐ 50 XP • 🪙 0 • Nv. 1</div><div class="box mission" id="mission">V6 • RPG: complete missões, ganhe XP e avance de nível.</div><div id="progress"><i id="progressFill"></i></div><div class="cross">+</div><div id="joy"><div id="knob"></div></div><div id="look"></div><button id="exitRoom">VOLTAR AO CORREDOR</button><button id="interact">FALAR</button></div>
 <div id="dialog"><b id="dt">Diretor</b><p id="dq"></p><div id="answers"></div><div class="small">Responda para ganhar XP.</div></div>
 <script src="/socket.io/socket.io.js"></script>
 <script type="module">
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js';
-const socket=io(); let started=false,xp=50,name='Aluno',turma='---',near=null,challenge=null;
+const socket=io(); let started=false,xp=50,coins=0,level=1,name='Aluno',turma='---',near=null,challenge=null,challengeType=null; const progress={PA:0,PG:0,Diretor:0,Biblioteca:0,Laboratório:0};
 const scene=new THREE.Scene(); scene.background=new THREE.Color(0x86b9dc); scene.fog=new THREE.Fog(0x86b9dc,45,105);
 const camera=new THREE.PerspectiveCamera(72,innerWidth/innerHeight,.1,140); camera.position.set(0,1.65,30);
 const renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'}); renderer.setPixelRatio(Math.min(devicePixelRatio,1.5)); renderer.setSize(innerWidth,innerHeight); renderer.shadowMap.enabled=false; document.body.appendChild(renderer.domElement);
@@ -85,19 +85,28 @@ function roomShell(cx,cz,title,color,formula){
 }
 roomShell(-45,0,'SALA 1 • PROGRESSÃO ARITMÉTICA','#1478a5','PA: aₙ = a₁ + (n−1)r');
 roomShell(45,0,'SALA 2 • PROGRESSÃO GEOMÉTRICA','#58a72c','PG: aₙ = a₁ · qⁿ⁻¹');
-function enterRoom(type){currentRoom=type;if(type==='PA'){camera.position.set(-45,1.65,6);yaw=0}else if(type==='PG'){camera.position.set(45,1.65,6);yaw=0}else return showChallenge(type);document.getElementById('status').innerHTML=name+' • '+turma+'<br>Sala '+type;document.getElementById('mission').textContent='📚 SALA '+type+': aproxime-se do professor e resolva o desafio.';document.getElementById('exitRoom').style.display='block';near=type;}
+function enterRoom(type){currentRoom=type;if(type==='PA'){camera.position.set(-45,1.65,6);yaw=0}else if(type==='PG'){camera.position.set(45,1.65,6);yaw=0}else return showChallenge(type);document.getElementById('status').innerHTML=name+' • '+turma+'<br>Sala '+type;document.getElementById('mission').textContent='📚 SALA '+type+': campanha '+((progress[type]||0)+1)+'/'+questions[type].length+' • aproxime-se do professor.';document.getElementById('exitRoom').style.display='block';near=type;}
 function leaveRoom(){currentRoom=null;camera.position.copy(corridorReturn);yaw=Math.PI;document.getElementById('exitRoom').style.display='none';document.getElementById('mission').textContent='MISSÃO: explore a escola, encontre o Diretor ou entre em outra sala.';}
 document.getElementById('exitRoom').onclick=leaveRoom;
 const questions={
-Diretor:[['Diretor: antes de entrar, complete: 2, 5, 8, 11, ...',['14','13','15','16'],'14']],
-PA:[['Sala de PA • Qual é o 10º termo de 2, 5, 8, ...?',['26','29','30','32'],'29']],
-PG:[['Sala de PG • Qual é o 6º termo de 2, 4, 8, ...?',['32','64','48','128'],'64']],
-Biblioteca:[['Biblioteca • Em uma PA, a diferença constante é chamada de...',['razão','quociente','produto','expoente'],'razão']],
-Laboratório:[['Laboratório • Se a₁=3 e q=2, então a₄ vale...',['12','18','24','27'],'24']]
+Diretor:[['🎯 Diretor • Complete: 2, 5, 8, 11, ...',['14','13','15','16'],'14']],
+PA:[
+['PA • Missão 1: próximo termo de 5, 8, 11, 14, ...',['17','18','16','20'],'17'],
+['PA • Missão 2: qual a razão de 7, 11, 15, 19, ...?',['2','3','4','5'],'4'],
+['PA • Missão 3: qual o 10º termo de 2, 5, 8, ...?',['26','29','30','32'],'29'],
+['PA • Missão 4: soma dos 5 primeiros termos de 2, 4, 6, 8, 10?',['20','25','30','35'],'30']],
+PG:[
+['PG • Missão 1: próximo termo de 3, 6, 12, 24, ...',['36','42','48','54'],'48'],
+['PG • Missão 2: qual a razão de 5, 15, 45, ...?',['2','3','4','5'],'3'],
+['PG • Missão 3: qual o 6º termo de 2, 4, 8, ...?',['32','64','48','128'],'64'],
+['PG • Missão 4: soma 1 + 2 + 4 + 8 + 16 = ?',['30','31','32','33'],'31']],
+Biblioteca:[['📚 Biblioteca • Em uma PA, a diferença constante é chamada de...',['razão','quociente','produto','expoente'],'razão']],
+Laboratório:[['🔬 Laboratório • Se a₁=3 e q=2, então a₄ vale...',['12','18','24','27'],'24']]
 };
-function showChallenge(type){challenge=questions[type][0];document.getElementById('dialog').style.display='block';document.getElementById('dt').textContent=type;document.getElementById('dq').textContent=challenge[0];let a=document.getElementById('answers');a.innerHTML='';challenge[1].forEach(v=>{let b=document.createElement('button');b.textContent=v;b.onclick=()=>answer(v);a.appendChild(b)})}
-function answer(v){if(v===challenge[2]){xp+=25;document.getElementById('mission').textContent='✅ CORRETO! +25 XP. Continue explorando.';socket.emit('xp',xp)}else document.getElementById('mission').textContent='❌ Tente novamente. Observe a sequência.';document.getElementById('xp').textContent='⭐ '+xp+' XP';document.getElementById('dialog').style.display='none'}
-window.start=()=>{name=document.getElementById('name').value.trim()||'Aluno';turma=document.getElementById('turma').value.trim()||'---';document.getElementById('login').style.display='none';document.getElementById('status').innerHTML=name+' • '+turma+'<br>Corredor';socket.emit('join',{name,room:turma});started=true}
+function updateScore(){level=Math.floor(xp/100)+1;document.getElementById('xp').textContent='⭐ '+xp+' XP • 🪙 '+coins+' • Nv. '+level;}
+function showChallenge(type){challengeType=type;let arr=questions[type],idx=Math.min(progress[type]||0,arr.length-1);challenge=arr[idx];document.getElementById('dialog').style.display='block';document.getElementById('dt').textContent=type+' • '+((progress[type]||0)+1)+'/'+arr.length;document.getElementById('dq').textContent=challenge[0];let a=document.getElementById('answers');a.innerHTML='';challenge[1].forEach(v=>{let b=document.createElement('button');b.textContent=v;b.onclick=()=>answer(v);a.appendChild(b)})}
+function answer(v){if(v===challenge[2]){xp+=25;coins+=10;let arr=questions[challengeType];if(progress[challengeType]<arr.length)progress[challengeType]++;let done=progress[challengeType]>=arr.length;document.getElementById('mission').textContent=done?'🏆 MISSÃO CONCLUÍDA em '+challengeType+'! +25 XP +10 moedas.':'✅ CORRETO! +25 XP +10 moedas. Próxima missão liberada.';socket.emit('xp',xp)}else{document.getElementById('mission').textContent='❌ Não foi dessa vez. Tente novamente e observe o padrão.';}updateScore();document.getElementById('dialog').style.display='none'}
+window.start=()=>{name=document.getElementById('name').value.trim()||'Aluno';turma=document.getElementById('turma').value.trim()||'---';document.getElementById('login').style.display='none';document.getElementById('status').innerHTML=name+' • '+turma+'<br>Corredor';socket.emit('join',{name,room:turma});updateScore();started=true}
 let yaw=0,pitch=0,moveX=0,moveY=0;const joy=document.getElementById('joy'),knob=document.getElementById('knob');let jid=null,jc={x:70,y:70};
 function joymove(e){let t=[...e.changedTouches].find(t=>t.identifier===jid);if(!t)return;let r=joy.getBoundingClientRect(),dx=t.clientX-(r.left+70),dy=t.clientY-(r.top+70),len=Math.hypot(dx,dy),m=Math.min(48,len),nx=len?dx/len:0,ny=len?dy/len:0;knob.style.transform=`translate(${nx*m}px,${ny*m}px)`;moveX=nx*(m/48);moveY=ny*(m/48)}
 joy.addEventListener('touchstart',e=>{jid=e.changedTouches[0].identifier;joymove(e)},{passive:false});joy.addEventListener('touchmove',e=>{e.preventDefault();joymove(e)},{passive:false});joy.addEventListener('touchend',()=>{jid=null;moveX=moveY=0;knob.style.transform='translate(0,0)'});
@@ -108,7 +117,7 @@ function update(dt){camera.rotation.order='YXZ';camera.rotation.y=yaw;camera.rot
 dirT+=dt;director.position.x=Math.sin(dirT*.55)*5;director.position.z=-25+Math.cos(dirT*.55)*3;director.rotation.y=dirT*.55;
 for(let n of npcs){if(!currentRoom){n.g.position.z=n.baseZ+Math.sin(dirT*.45+n.baseZ)*2.5}}
 let best=null,bd=999;if(currentRoom){best=currentRoom;bd=2}else{let d=camera.position.distanceTo(director.position);if(d<3){best='Diretor';bd=d}for(let z of zones){let dd=Math.hypot(camera.position.x-z.p.x,camera.position.z-z.p.z);if(dd<3&&dd<bd){best=z.type;bd=dd}}}
-near=best;let ib=document.getElementById('interact');ib.style.display=near?'block':'none';ib.textContent=near==='Diretor'?'FALAR':currentRoom?'DESAFIO':'ENTRAR';
+let total=currentRoom&&questions[currentRoom]?questions[currentRoom].length:4;let done=currentRoom?(progress[currentRoom]||0):Math.min(4,(progress.PA||0)+(progress.PG||0));document.getElementById('progressFill').style.width=Math.min(100,done/total*100)+'%';near=best;let ib=document.getElementById('interact');ib.style.display=near?'block':'none';ib.textContent=near==='Diretor'?'FALAR':currentRoom?'DESAFIO':'ENTRAR';
 let area=currentRoom?'Sala '+currentRoom:'Corredor';if(!currentRoom&&camera.position.x<-10)area=camera.position.z>14?'Entrada Sala PA':camera.position.z>3?'Biblioteca':'Ala esquerda';if(!currentRoom&&camera.position.x>10)area=camera.position.z>14?'Entrada Sala PG':camera.position.z>3?'Laboratório':'Ala direita';document.getElementById('status').innerHTML=name+' • '+turma+'<br>'+area}
 let last=performance.now();function loop(t){let dt=Math.min(.04,(t-last)/1000);last=t;if(started)update(dt);renderer.render(scene,camera);requestAnimationFrame(loop)}requestAnimationFrame(loop);
 addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});
