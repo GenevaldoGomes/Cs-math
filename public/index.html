@@ -1,19 +1,18 @@
 <!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>MATH SCHOOL 3D V4</title><style>
+<title>MATH SCHOOL 3D V5</title><style>
 *{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;font-family:Arial,sans-serif;background:#081827;color:white;touch-action:none}
 canvas{display:block}#login{position:fixed;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;background:linear-gradient(#123d5b,#071827)}
 .card{width:min(92vw,520px);padding:28px;background:#071c2b;border:3px solid #48b6ff;border-radius:25px;box-shadow:0 18px 60px #0008}.card h1{color:#ffd047;font-size:clamp(30px,7vw,52px);margin:0 0 10px}.card input{width:100%;padding:16px;border-radius:12px;border:0;font-size:20px;margin:12px 0}.card button,.action{border:0;border-radius:12px;background:#f4aa27;color:#111;font-weight:800;padding:16px;font-size:18px}
 #hud{position:fixed;inset:0;pointer-events:none;z-index:5}.box{position:absolute;background:#071c2bd9;border:1px solid #ffffff30;border-radius:16px;padding:12px 16px;font-weight:bold}.status{left:16px;top:16px}.xp{right:16px;top:16px;font-size:22px}.mission{left:50%;top:15px;transform:translateX(-50%);max-width:45vw;text-align:center}.cross{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-size:42px}
 #joy{pointer-events:auto;position:absolute;left:22px;bottom:28px;width:140px;height:140px;border:3px solid #fff5;border-radius:50%;background:#fff1}#knob{position:absolute;width:62px;height:62px;border-radius:50%;background:#ffffffaa;left:36px;top:36px}
 #look{pointer-events:auto;position:absolute;right:0;bottom:0;width:48%;height:72%}
-#interact{pointer-events:auto;position:absolute;right:24px;bottom:42px;border:0;border-radius:50%;width:84px;height:84px;background:#f4aa27dd;font-weight:bold;display:none}
+#interact{pointer-events:auto;position:absolute;right:24px;bottom:42px;border:0;border-radius:22px;min-width:112px;height:70px;padding:0 18px;background:#f4aa27ee;font-weight:900;display:none;box-shadow:0 8px 24px #0006} #exitRoom{pointer-events:auto;position:absolute;right:24px;bottom:124px;border:0;border-radius:16px;padding:14px 18px;background:#2f80ed;color:#fff;font-weight:900;display:none}
 #dialog{position:fixed;z-index:12;left:50%;bottom:24px;transform:translateX(-50%);width:min(92vw,620px);background:#071c2bf2;border:2px solid #48b6ff;border-radius:18px;padding:18px;display:none}
 #answers{display:grid;grid-template-columns:1fr 1fr;gap:8px}#answers button{padding:12px;border:0;border-radius:9px;font-weight:bold}.small{opacity:.8;font-size:13px}
 @media(max-width:650px){.mission{top:105px;max-width:75vw;font-size:12px}.box{padding:9px 12px}.xp{font-size:17px}}
-#hint{position:absolute;right:18px;top:90px;background:#071c2bd9;border:1px solid #ffffff30;border-radius:14px;padding:10px 12px;font-size:12px;line-height:1.35;max-width:180px}.v4badge{color:#7fe0ff;font-weight:900}@media(max-width:650px){#hint{top:170px;right:12px;max-width:145px;font-size:10px}}
 </style></head><body>
-<div id="login"><div class="card"><h1>🏫 MATH SCHOOL 3D <small>V4</small></h1><p>Entre na escola, encontre o diretor e escolha sua sala.</p><input id="name" placeholder="Nome do aluno"><input id="turma" placeholder="Turma (ex.: 208)"><button onclick="start()">ENTRAR NA ESCOLA</button></div></div>
-<div id="hud"><div class="box status" id="status">Aluno<br>Entrada</div><div class="box xp" id="xp">⭐ 50 XP</div><div class="box mission" id="mission">MISSÃO: encontre o Diretor ou entre em uma sala.</div><div id="hint"><span class="v4badge">V4 • ESCOLA VIVA</span><br>🟡 Explore o corredor<br>🚪 Aproxime-se das salas<br>👨‍🏫 Encontre o Diretor<br>⭐ Ganhe XP</div><div class="cross">+</div><div id="joy"><div id="knob"></div></div><div id="look"></div><button id="interact">FALAR</button></div>
+<div id="login"><div class="card"><h1>🏫 MATH SCHOOL 3D <small>V5</small></h1><p>Entre na escola, encontre o diretor e escolha sua sala.</p><input id="name" placeholder="Nome do aluno"><input id="turma" placeholder="Turma (ex.: 208)"><button onclick="start()">ENTRAR NA ESCOLA</button></div></div>
+<div id="hud"><div class="box status" id="status">Aluno<br>Entrada</div><div class="box xp" id="xp">⭐ 50 XP</div><div class="box mission" id="mission">V5 • MISSÃO: explore a escola, entre em PA/PG ou encontre o Diretor.</div><div class="cross">+</div><div id="joy"><div id="knob"></div></div><div id="look"></div><button id="exitRoom">VOLTAR AO CORREDOR</button><button id="interact">FALAR</button></div>
 <div id="dialog"><b id="dt">Diretor</b><p id="dq"></p><div id="answers"></div><div class="small">Responda para ganhar XP.</div></div>
 <script src="/socket.io/socket.io.js"></script>
 <script type="module">
@@ -23,19 +22,19 @@ const scene=new THREE.Scene(); scene.background=new THREE.Color(0x86b9dc); scene
 const camera=new THREE.PerspectiveCamera(72,innerWidth/innerHeight,.1,140); camera.position.set(0,1.65,30);
 const renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'}); renderer.setPixelRatio(Math.min(devicePixelRatio,1.5)); renderer.setSize(innerWidth,innerHeight); renderer.shadowMap.enabled=false; document.body.appendChild(renderer.domElement);
 scene.add(new THREE.HemisphereLight(0xe8f5ff,0x66704f,2.2)); const sun=new THREE.DirectionalLight(0xffffff,1.3);sun.position.set(12,25,10);scene.add(sun);
-renderer.outputColorSpace=THREE.SRGBColorSpace; renderer.toneMapping=THREE.ACESFilmicToneMapping; renderer.toneMappingExposure=1.05;
 const mat=(c)=>new THREE.MeshLambertMaterial({color:c}); const coll=[];
 function box(x,y,z,w,h,d,c,collision=true){let m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat(c));m.position.set(x,y,z);scene.add(m);if(collision)coll.push(new THREE.Box3().setFromObject(m));return m}
 function sign(text,x,y,z,rot=0,color='#14334a'){let cv=document.createElement('canvas');cv.width=512;cv.height=128;let g=cv.getContext('2d');g.fillStyle=color;g.fillRect(0,0,512,128);g.fillStyle='white';g.font='bold 42px Arial';g.textAlign='center';g.textBaseline='middle';g.fillText(text,256,64);let t=new THREE.CanvasTexture(cv),m=new THREE.Mesh(new THREE.PlaneGeometry(5,1.25),new THREE.MeshBasicMaterial({map:t}));m.position.set(x,y,z);m.rotation.y=rot;scene.add(m);return m}
-// V4 school shell: piso, teto, paredes e faixa visual
-box(0,-.25,0,44,.5,78,0xb9b29f,false); box(0,5,-38,44,10,.4,0xe9e5d8); box(-22,5,0,.4,10,78,0xe9e5d8);box(22,5,0,.4,10,78,0xe9e5d8);
-box(0,5.2,0,44,.25,78,0xf3f0e6,false);
-// faixa azul institucional e rodape
-box(-21.75,1.1,0,.12,1.2,77,0x2f7191,false); box(21.75,1.1,0,.12,1.2,77,0x2f7191,false);
-// luminarias no corredor
-for(let z=-32;z<=32;z+=8){box(0,4.98,z,4,.06,.7,0xf7f1c7,false)}
-// janelas laterais decorativas
-for(let z=-29;z<=29;z+=12){box(-21.72,3,z,.08,1.5,4,0x8bc7e8,false);box(21.72,3,z,.08,1.5,4,0x8bc7e8,false)}
+// school shell
+box(0,-.25,0,44,.5,78,0xd9d9d2,false); box(0,5,-38,44,10,.4,0xf4f1e8); box(-22,5,0,.4,10,78,0xe8e4d7);box(22,5,0,.4,10,78,0xe8e4d7);
+// V5: teto, luminarias, piso escolar, bancos e bebedouro
+box(0,5.15,0,44,.3,78,0xf3f0e8,false);
+for(let z=-34;z<=34;z+=6){box(0,5.0,z,7,.06,.45,0xfff3c4,false); box(-11,5.0,z,5,.06,.35,0xfff3c4,false); box(11,5.0,z,5,.06,.35,0xfff3c4,false)}
+for(let z=-35;z<=35;z+=5)box(0,-.01,z,43,.025,.035,0xb8b8b0,false);
+for(let x=-20;x<=20;x+=5)box(x,-.005,0,.035,.025,77,0xb8b8b0,false);
+for(let z of [-6,6]){box(-20,.45,z,2.8,.18,.65,0x7b573c,false);box(20,.45,z,2.8,.18,.65,0x7b573c,false)}
+box(20.2,1.0,-12,1.2,2,.7,0xb9d7df,false); box(20.2,1.6,-12,.8,.35,.72,0x5aa4c4,false);
+
 for(let z=-30;z<=25;z+=11){box(-10.5,2.5,z,.25,5,8,0xf1eee4);box(10.5,2.5,z,.25,5,8,0xf1eee4)}
 // central hall walls / doors
 for(let z=-31;z<=22;z+=11){box(-15.8,2.5,z,12,.3,.3,0x4f7c91,false);box(15.8,2.5,z,12,.3,.3,0x4f7c91,false)}
@@ -58,19 +57,39 @@ for(let z=3;z<13;z+=3)box(-17,1.3,z,5,2.6,.5,0x734b2f,false);
 // lab benches
 for(let z=3;z<13;z+=3)box(16,.8,z,6,1.6,1.1,0xd7d7d7,false);
 // courtyard at front
-box(0,.01,35,20,.03,6,0x6c9c61,false);sign('🏀 PÁTIO / QUADRA',0,2.8,37.8,0,'#b67823'); box(0,.08,34.5,.12,.12,5,0xffffff,false); box(-6,.08,34.5,.12,.12,5,0xffffff,false); box(6,.08,34.5,.12,.12,5,0xffffff,false);
-// alunos NPC da V4
-const npcs=[];
-function makeStudent(x,z,color=0x3f6ca8){const g=new THREE.Group();const b=new THREE.Mesh(new THREE.BoxGeometry(.7,1.15,.45),mat(color));b.position.y=.85;const h=new THREE.Mesh(new THREE.SphereGeometry(.27,12,8),mat(0xc98e68));h.position.y=1.65;g.add(b,h);g.position.set(x,0,z);scene.add(g);npcs.push({g,baseX:x,baseZ:z,phase:Math.random()*6.28});}
-makeStudent(-3,5,0x3f6ca8);makeStudent(4,-3,0x8b4fa8);makeStudent(-4,-12,0x3a8d65);makeStudent(3,14,0xb65c52);
-// director
-const director=new THREE.Group(); const body=box(0,0,0,1.0,1.65,.6,0x18365c,false); body.position.y=.95; const head=new THREE.Mesh(new THREE.SphereGeometry(.38,16,12),mat(0xd39a72));head.position.y=2;director.add(body);director.add(head);director.position.set(0,0,-27);scene.add(director);
-const label=sign('DIRETOR',0,0,0,0,'#8f3c3c'); label.scale.set(.45,.45,.45); director.add(label); label.position.set(0,2.75,0);
+box(0,.01,35,20,.03,6,0x6c9c61,false);sign('🏀 PÁTIO / QUADRA',0,2.8,37.8,0,'#b67823');
+// V5: diretor humanoide low-poly com braços e pernas
+function part(w,h,d,c,x,y,z){let m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat(c));m.position.set(x,y,z);return m}
+const director=new THREE.Group();
+director.add(part(.9,1.15,.48,0x18365c,0,1.35,0));
+director.add(part(.28,.95,.3,0x1b2638,-.22,.38,0),part(.28,.95,.3,0x1b2638,.22,.38,0));
+director.add(part(.22,.9,.25,0xd39a72,-.62,1.35,0),part(.22,.9,.25,0xd39a72,.62,1.35,0));
+const head=new THREE.Mesh(new THREE.SphereGeometry(.36,16,12),mat(0xd39a72));head.position.y=2.18;director.add(head);
+const hair=new THREE.Mesh(new THREE.SphereGeometry(.37,16,8,0,Math.PI*2,0,Math.PI/2),mat(0x3c2a1f));hair.position.y=2.32;director.add(hair);
+director.position.set(0,0,-27);scene.add(director);
+const label=sign('DIRETOR',0,0,0,0,'#8f3c3c'); label.scale.set(.42,.42,.42); director.add(label); label.position.set(0,2.9,0);
 let dirT=0;
+// NPCs V5
+const npcs=[];function makeStudent(x,z,c){let g=new THREE.Group();g.add(part(.65,.95,.4,c,0,1.15,0),part(.2,.75,.22,0x263238,-.18,.35,0),part(.2,.75,.22,0x263238,.18,.35,0));let h=new THREE.Mesh(new THREE.SphereGeometry(.3,12,10),mat(0xc98f68));h.position.y=1.9;g.add(h);g.position.set(x,0,z);scene.add(g);npcs.push({g,baseZ:z,s:Math.random()>.5?1:-1});return g}
+makeStudent(-5,-5,0x2f80ed);makeStudent(5,3,0x27ae60);makeStudent(-4,12,0x8e44ad);makeStudent(4,-15,0xe67e22);
 // interactions zones
 const zones=[{type:'PA',p:new THREE.Vector3(-9,0,20)},{type:'PG',p:new THREE.Vector3(9,0,20)},{type:'Biblioteca',p:new THREE.Vector3(-9,0,9)},{type:'Laboratório',p:new THREE.Vector3(9,0,9)}];
+// V5: salas funcionais - o aluno entra de verdade no ambiente
+let currentRoom=null; const corridorReturn=new THREE.Vector3(0,1.65,22);
+function roomShell(cx,cz,title,color,formula){
+  box(cx,-.25,cz,18,.5,16,0xe4e0d5,false);box(cx-9,2.5,cz,.3,5,16,0xf5f2e9);box(cx+9,2.5,cz,.3,5,16,0xf5f2e9);box(cx,2.5,cz-8,18,5,.3,0xf5f2e9);box(cx,5.05,cz,18,.2,16,0xf7f4ed,false);
+  box(cx,2.3,cz-7.75,7,2.5,.12,0x214b3b,false);sign(title,cx,4.15,cz-7.55,0,color);sign(formula,cx,2.3,cz-7.65,0,'#214b3b');
+  for(let rz=-3;rz<=4;rz+=3.3)for(let rx=-5;rx<=5;rx+=3.3){desk(cx+rx,cz+rz);}
+  // mesa e professor
+  box(cx,.8,cz-5.6,4,1.4,1.1,0x9a633b,false);let prof=makeStudent(cx+3,cz-5.5,0x34495e);prof.scale.set(1.05,1.05,1.05);
+}
+roomShell(-45,0,'SALA 1 • PROGRESSÃO ARITMÉTICA','#1478a5','PA: aₙ = a₁ + (n−1)r');
+roomShell(45,0,'SALA 2 • PROGRESSÃO GEOMÉTRICA','#58a72c','PG: aₙ = a₁ · qⁿ⁻¹');
+function enterRoom(type){currentRoom=type;if(type==='PA'){camera.position.set(-45,1.65,6);yaw=0}else if(type==='PG'){camera.position.set(45,1.65,6);yaw=0}else return showChallenge(type);document.getElementById('status').innerHTML=name+' • '+turma+'<br>Sala '+type;document.getElementById('mission').textContent='📚 SALA '+type+': aproxime-se do professor e resolva o desafio.';document.getElementById('exitRoom').style.display='block';near=type;}
+function leaveRoom(){currentRoom=null;camera.position.copy(corridorReturn);yaw=Math.PI;document.getElementById('exitRoom').style.display='none';document.getElementById('mission').textContent='MISSÃO: explore a escola, encontre o Diretor ou entre em outra sala.';}
+document.getElementById('exitRoom').onclick=leaveRoom;
 const questions={
-Diretor:[['Diretor: desafio relâmpago! Complete a PA: 2, 5, 8, 11, ...',['14','13','15','16'],'14']],
+Diretor:[['Diretor: antes de entrar, complete: 2, 5, 8, 11, ...',['14','13','15','16'],'14']],
 PA:[['Sala de PA • Qual é o 10º termo de 2, 5, 8, ...?',['26','29','30','32'],'29']],
 PG:[['Sala de PG • Qual é o 6º termo de 2, 4, 8, ...?',['32','64','48','128'],'64']],
 Biblioteca:[['Biblioteca • Em uma PA, a diferença constante é chamada de...',['razão','quociente','produto','expoente'],'razão']],
@@ -83,13 +102,14 @@ let yaw=0,pitch=0,moveX=0,moveY=0;const joy=document.getElementById('joy'),knob=
 function joymove(e){let t=[...e.changedTouches].find(t=>t.identifier===jid);if(!t)return;let r=joy.getBoundingClientRect(),dx=t.clientX-(r.left+70),dy=t.clientY-(r.top+70),len=Math.hypot(dx,dy),m=Math.min(48,len),nx=len?dx/len:0,ny=len?dy/len:0;knob.style.transform=`translate(${nx*m}px,${ny*m}px)`;moveX=nx*(m/48);moveY=ny*(m/48)}
 joy.addEventListener('touchstart',e=>{jid=e.changedTouches[0].identifier;joymove(e)},{passive:false});joy.addEventListener('touchmove',e=>{e.preventDefault();joymove(e)},{passive:false});joy.addEventListener('touchend',()=>{jid=null;moveX=moveY=0;knob.style.transform='translate(0,0)'});
 let lx,ly;const look=document.getElementById('look');look.addEventListener('touchstart',e=>{lx=e.changedTouches[0].clientX;ly=e.changedTouches[0].clientY},{passive:false});look.addEventListener('touchmove',e=>{e.preventDefault();let t=e.changedTouches[0];yaw-=(t.clientX-lx)*.004;pitch-=(t.clientY-ly)*.003;pitch=Math.max(-1.1,Math.min(1.1,pitch));lx=t.clientX;ly=t.clientY},{passive:false});
-document.getElementById('interact').onclick=()=>{if(near)showChallenge(near)};
+document.getElementById('interact').onclick=()=>{if(!near)return;if((near==='PA'||near==='PG')&&!currentRoom)enterRoom(near);else showChallenge(near)};
 function blocked(pos){let p=new THREE.Box3(new THREE.Vector3(pos.x-.28,.1,pos.z-.28),new THREE.Vector3(pos.x+.28,1.9,pos.z+.28));return coll.some(c=>p.intersectsBox(c))}
-function update(dt){camera.rotation.order='YXZ';camera.rotation.y=yaw;camera.rotation.x=pitch;let f=new THREE.Vector3(-Math.sin(yaw),0,-Math.cos(yaw)),r=new THREE.Vector3(Math.cos(yaw),0,-Math.sin(yaw));let np=camera.position.clone().addScaledVector(f,-moveY*dt*5).addScaledVector(r,moveX*dt*5);np.x=Math.max(-21.3,Math.min(21.3,np.x));np.z=Math.max(-37,Math.min(38,np.z));if(!blocked(np))camera.position.copy(np);
-dirT+=dt;director.position.x=Math.sin(dirT*.55)*5;director.position.z=-25+Math.cos(dirT*.55)*3;director.rotation.y=dirT*.55; npcs.forEach((n,i)=>{n.g.position.z=n.baseZ+Math.sin(dirT*.35+n.phase)*4;n.g.rotation.y=Math.sin(dirT*.35+n.phase)>0?0:Math.PI;});
-let d=camera.position.distanceTo(director.position),best=d<3?'Diretor':null,bd=d;for(let z of zones){let dd=Math.hypot(camera.position.x-z.p.x,camera.position.z-z.p.z);if(dd<3&&dd<bd){best=z.type;bd=dd}}
-near=best;let ib=document.getElementById('interact');ib.style.display=near?'block':'none';ib.textContent=near==='Diretor'?'FALAR':'ENTRAR';
-let area='Corredor';if(camera.position.x<-10)area=camera.position.z>14?'Sala PA':camera.position.z>3?'Biblioteca':'Ala esquerda';if(camera.position.x>10)area=camera.position.z>14?'Sala PG':camera.position.z>3?'Laboratório':'Ala direita';document.getElementById('status').innerHTML=name+' • '+turma+'<br>'+area}
+function update(dt){camera.rotation.order='YXZ';camera.rotation.y=yaw;camera.rotation.x=pitch;let f=new THREE.Vector3(-Math.sin(yaw),0,-Math.cos(yaw)),r=new THREE.Vector3(Math.cos(yaw),0,-Math.sin(yaw));let np=camera.position.clone().addScaledVector(f,-moveY*dt*5).addScaledVector(r,moveX*dt*5);if(currentRoom==='PA'){np.x=Math.max(-53.3,Math.min(-36.7,np.x));np.z=Math.max(-7.2,Math.min(7.2,np.z));camera.position.copy(np)}else if(currentRoom==='PG'){np.x=Math.max(36.7,Math.min(53.3,np.x));np.z=Math.max(-7.2,Math.min(7.2,np.z));camera.position.copy(np)}else{np.x=Math.max(-21.3,Math.min(21.3,np.x));np.z=Math.max(-37,Math.min(38,np.z));if(!blocked(np))camera.position.copy(np)}
+dirT+=dt;director.position.x=Math.sin(dirT*.55)*5;director.position.z=-25+Math.cos(dirT*.55)*3;director.rotation.y=dirT*.55;
+for(let n of npcs){if(!currentRoom){n.g.position.z=n.baseZ+Math.sin(dirT*.45+n.baseZ)*2.5}}
+let best=null,bd=999;if(currentRoom){best=currentRoom;bd=2}else{let d=camera.position.distanceTo(director.position);if(d<3){best='Diretor';bd=d}for(let z of zones){let dd=Math.hypot(camera.position.x-z.p.x,camera.position.z-z.p.z);if(dd<3&&dd<bd){best=z.type;bd=dd}}}
+near=best;let ib=document.getElementById('interact');ib.style.display=near?'block':'none';ib.textContent=near==='Diretor'?'FALAR':currentRoom?'DESAFIO':'ENTRAR';
+let area=currentRoom?'Sala '+currentRoom:'Corredor';if(!currentRoom&&camera.position.x<-10)area=camera.position.z>14?'Entrada Sala PA':camera.position.z>3?'Biblioteca':'Ala esquerda';if(!currentRoom&&camera.position.x>10)area=camera.position.z>14?'Entrada Sala PG':camera.position.z>3?'Laboratório':'Ala direita';document.getElementById('status').innerHTML=name+' • '+turma+'<br>'+area}
 let last=performance.now();function loop(t){let dt=Math.min(.04,(t-last)/1000);last=t;if(started)update(dt);renderer.render(scene,camera);requestAnimationFrame(loop)}requestAnimationFrame(loop);
 addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});
 </script></body></html>
