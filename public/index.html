@@ -1,5 +1,5 @@
 <!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>MATH SCHOOL 3D V7</title><style>
+<title>MATH SCHOOL 3D V7.1</title><style>
 *{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;font-family:Arial,sans-serif;background:#081827;color:white;touch-action:none}
 canvas{display:block}#login{position:fixed;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;background:linear-gradient(#123d5b,#071827)}
 .card{width:min(92vw,520px);padding:28px;background:#071c2b;border:3px solid #48b6ff;border-radius:25px;box-shadow:0 18px 60px #0008}.card h1{color:#ffd047;font-size:clamp(30px,7vw,52px);margin:0 0 10px}.card input{width:100%;padding:16px;border-radius:12px;border:0;font-size:20px;margin:12px 0}.card button,.action{border:0;border-radius:12px;background:#f4aa27;color:#111;font-weight:800;padding:16px;font-size:18px}
@@ -21,8 +21,8 @@ canvas{display:block}#login{position:fixed;inset:0;z-index:20;display:flex;align
 }
 </script>
 </head><body>
-<div id="login"><div class="card"><h1>🏫 MATH SCHOOL 3D <small>V7</small></h1><p>Entre na escola, encontre o diretor e escolha sua sala.</p><input id="name" placeholder="Nome do aluno"><input id="turma" placeholder="Turma (ex.: 208)"><button onclick="start()">ENTRAR NA ESCOLA</button></div></div>
-<div id="hud"><div class="box status" id="status">Aluno<br>Entrada</div><div class="box xp" id="xp">⭐ 50 XP • 🪙 0 • Nv. 1</div><div class="box mission" id="mission">🎮 V7 • ESCOLA VIVA • explore, converse, aprenda e complete missões</div><div id="progress"><i id="progressFill"></i></div><div class="cross">+</div><div id="pcHint">🖱️ Clique: olhar • WASD/Setas: andar • Shift: correr • E: interagir • ESC: liberar mouse</div><div id="joy"><div id="knob"></div></div><div id="look"></div><button id="exitRoom">VOLTAR AO CORREDOR</button><button id="interact">FALAR</button></div>
+<div id="login"><div class="card"><h1>🏫 MATH SCHOOL 3D <small>V7.1</small></h1><p>Entre na escola, encontre o diretor e escolha sua sala.</p><input id="name" placeholder="Nome do aluno"><input id="turma" placeholder="Turma (ex.: 208)"><button onclick="start()">ENTRAR NA ESCOLA</button></div></div>
+<div id="hud"><div class="box status" id="status">Aluno<br>Entrada</div><div class="box xp" id="xp">⭐ 50 XP • 🪙 0 • Nv. 1</div><div class="box mission" id="mission">🎮 V7.1 • PERSONAGENS VIVOS • caminhada sincronizada e movimento natural</div><div id="progress"><i id="progressFill"></i></div><div class="cross">+</div><div id="pcHint">🖱️ Clique: olhar • WASD/Setas: andar • Shift: correr • E: interagir • ESC: liberar mouse</div><div id="joy"><div id="knob"></div></div><div id="look"></div><button id="exitRoom">VOLTAR AO CORREDOR</button><button id="interact">FALAR</button></div>
 <div id="dialog"><b id="dt">Diretor</b><p id="dq"></p><div id="answers"></div><div class="small">Responda para ganhar XP.</div></div>
 <script src="/socket.io/socket.io.js"></script>
 <script type="module">
@@ -48,7 +48,7 @@ function sign(text,x,y,z,rot=0,color='#14334a'){let cv=document.createElement('c
 // school shell
 box(0,-.25,0,44,.5,78,0xd9d9d2,false); box(0,5,-38,44,10,.4,0xf4f1e8); box(-22,5,0,.4,10,78,0xe8e4d7);box(22,5,0,.4,10,78,0xe8e4d7);
 
-// V7: detalhes de escola viva — janelas, murais, relógio, vasos e pátio/quadra
+// V7.1: detalhes de escola viva — janelas, murais, relógio, vasos e pátio/quadra
 function windowPanel(x,y,z,rot=0){
   const frame=new THREE.Group();
   const glass=new THREE.Mesh(new THREE.PlaneGeometry(2.4,1.45),new THREE.MeshPhongMaterial({color:0x9fd7ef,transparent:true,opacity:.55,shininess:90,side:THREE.DoubleSide}));
@@ -125,7 +125,7 @@ box(0,.03,39,20,.05,14,0x4b8f5b,false);
 for(let x of [-7,7]){box(x,1.5,44,.12,3,.12,0xffffff,false);box(x,2.9,43.4,3,.10,.10,0xffffff,false)}
 box(0,.04,39,12,.03,.10,0xffffff,false);box(0,.04,33,12,.03,.10,0xffffff,false);
 for(let x of [-6,6])box(x,.04,36,.10,.03,6,0xffffff,false);
-// V7: personagens GLB refeitos com anatomia conectada, proporções humanas e visual escolar
+// V7.1: personagens GLB refeitos com anatomia conectada, proporções humanas e visual escolar
 function part(w,h,d,c,x,y,z){let m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat(c));m.position.set(x,y,z);return m}
 function human(opts={}){
   const g=new THREE.Group(), skin=opts.skin||0xd39a72, shirt=opts.shirt||0x315b85, pants=opts.pants||0x263238, hairC=opts.hair||0x3b2a20;
@@ -145,35 +145,84 @@ function human(opts={}){
 let gltfLoader=null;
 try { gltfLoader=new GLTFLoader(); } catch(e) { console.warn('GLTFLoader indisponível; usando personagens reserva.',e); }
 const mixers=[];
+function findClip(clips,rx){return clips.find(c=>rx.test((c.name||'').toLowerCase()));}
 function upgradeToGLB(group,url,scale=1){
-  if(!gltfLoader){ console.warn('GLB ignorado; personagem procedural mantido:',url); return; }
+  if(!gltfLoader){ console.warn('GLB ignorado; fallback procedural:',url); return; }
   try { gltfLoader.load(url,(gltf)=>{
     for(const ch of [...group.children]){ if(!ch.userData.keepUI) ch.visible=false; }
     const model=gltf.scene; model.scale.setScalar(scale); model.position.y=0;
     model.traverse(o=>{if(o.isMesh){o.frustumCulled=true;o.castShadow=true;o.receiveShadow=true;}});
     group.add(model); group.userData.glbModel=model; group.userData.isGLB=true;
-    if(gltf.animations && gltf.animations.length){
+    const clips=gltf.animations||[];
+    if(clips.length){
       const mixer=new THREE.AnimationMixer(model); mixers.push(mixer); group.userData.mixer=mixer;
-      const clips=gltf.animations;
-      const idle=clips.find(c=>/idle/i.test(c.name))||clips[0];
-      const walk=clips.find(c=>/walk/i.test(c.name))||clips[Math.min(1,clips.length-1)];
-      group.userData.actions={idle:mixer.clipAction(idle),walk:mixer.clipAction(walk)};
-      group.userData.actions.idle.play();
+      const idle=findClip(clips,/idle|stand|breath/)||clips[0];
+      const walk=findClip(clips,/walk|walking|locomotion|move/)||null;
+      const run=findClip(clips,/run|running|jog/)||null;
+      group.userData.actions={
+        idle:mixer.clipAction(idle),
+        walk:walk?mixer.clipAction(walk):null,
+        run:run?mixer.clipAction(run):null
+      };
+      group.userData.actions.idle.setLoop(THREE.LoopRepeat,Infinity).play();
+      group.userData.hasRealWalk=!!walk;
+    }else{
+      group.userData.hasRealWalk=false;
+      console.info('V7.1: GLB sem AnimationClip; usando caminhada procedural visual:',url);
     }
-  },undefined,(err)=>console.warn('GLB fallback procedural:',url,err)); } catch(err) { console.warn('Falha GLB; fallback mantido:',url,err); }
+  },undefined,(err)=>console.warn('GLB fallback procedural:',url,err)); } catch(err){console.warn('Falha GLB:',url,err);}
 }
 
-function animateWalk(g,dt,moving=true){
-  if(g.userData.actions){
-    const target=moving?g.userData.actions.walk:g.userData.actions.idle;
-    const other=moving?g.userData.actions.idle:g.userData.actions.walk;
-    if(g.userData.lastAction!==target){other.fadeOut(.18);target.reset().fadeIn(.18).play();g.userData.lastAction=target;}
+function animateWalk(g,dt,moving=true,speed=1){
+  speed=Math.max(.15,Math.min(2.2,speed||1));
+  const A=g.userData.actions;
+  if(A){
+    const target=(moving && speed>1.45 && A.run)?A.run:(moving && A.walk)?A.walk:A.idle;
+    if(target && g.userData.lastAction!==target){
+      const prev=g.userData.lastAction;
+      if(prev) prev.crossFadeTo(target,.22,true);
+      target.reset().fadeIn(.22).play();
+      g.userData.lastAction=target;
+    }
+    if(target) target.timeScale=moving?(.78+speed*.32):1;
   }
-  if(g.userData.glbModel){g.userData.walkPhase=(g.userData.walkPhase||0)+dt*(moving?7:3);}
-  let L=g.userData.limbs;if(!L)return;g.userData.walkPhase+=dt*(moving?7:3);let a=moving?Math.sin(g.userData.walkPhase)*.52:0;
-  L.armL.rotation.x=a;L.armR.rotation.x=-a;L.legL.rotation.x=-a*.65;L.legR.rotation.x=a*.65;
-  if(!moving){L.armL.rotation.x*=.8;L.armR.rotation.x*=.8;L.legL.rotation.x*=.8;L.legR.rotation.x*=.8}
+
+  g.userData.walkPhase=(g.userData.walkPhase||0)+dt*(moving?(5.4+speed*1.7):2.2);
+
+  // GLBs estáticos: simula passada corporal em vez de "deslizar reto".
+  if(g.userData.glbModel && moving && !g.userData.hasRealWalk){
+    const p=g.userData.walkPhase;
+    g.userData.glbModel.position.y=Math.abs(Math.sin(p))*0.025;
+    g.userData.glbModel.rotation.z=Math.sin(p)*0.012;
+    g.userData.glbModel.rotation.x=Math.sin(p*2)*0.008;
+  }else if(g.userData.glbModel && !moving && !g.userData.hasRealWalk){
+    g.userData.glbModel.position.y*=.72;
+    g.userData.glbModel.rotation.z*=.72;
+    g.userData.glbModel.rotation.x*=.72;
+  }
+
+  // Personagens procedurais continuam com braços/pernas articulados.
+  const L=g.userData.limbs;if(!L)return;
+  const a=moving?Math.sin(g.userData.walkPhase)*.58:0;
+  L.armL.rotation.x=a;L.armR.rotation.x=-a;
+  L.legL.rotation.x=-a*.72;L.legR.rotation.x=a*.72;
+  if(!moving){L.armL.rotation.x*=.75;L.armR.rotation.x*=.75;L.legL.rotation.x*=.75;L.legR.rotation.x*=.75;}
 }
+
+// V7.1: sincroniza orientação, deslocamento e passada dos NPCs.
+function moveNPCNatural(g,dx,dz,dt,maxSpeed=1.15){
+  const len=Math.hypot(dx,dz);
+  if(len<0.0001){ animateWalk(g,dt,false,0); return false; }
+  const nx=dx/len,nz=dz/len;
+  const step=Math.min(len,maxSpeed*dt);
+  g.position.x+=nx*step; g.position.z+=nz*step;
+  const desired=Math.atan2(nx,nz);
+  let d=((desired-g.rotation.y+Math.PI)%(Math.PI*2))-Math.PI;
+  g.rotation.y+=d*Math.min(1,dt*7);
+  animateWalk(g,dt,true,maxSpeed);
+  return true;
+}
+
 const director=human({shirt:0x18365c,pants:0x1b2638,hair:0x2c211b});director.scale.set(1.08,1.08,1.08);director.position.set(0,0,-27);scene.add(director);
 const label=sign('DIRETOR',0,0,0,0,'#8f3c3c');label.scale.set(.34,.34,.34);label.userData.keepUI=true;director.add(label);label.position.set(0,3.0,.05);upgradeToGLB(director,'/models/director.glb',1.0);
 const directorAI={target:new THREE.Vector3(0,0,-20),wait:0,waitGoal:1.5,speed:1.45};
