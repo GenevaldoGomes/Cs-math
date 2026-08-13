@@ -88,7 +88,7 @@ for(let z=3;z<13;z+=3)box(-17,1.3,z,5,2.6,.5,0x734b2f,false);
 for(let z=3;z<13;z+=3)box(16,.8,z,6,1.6,1.1,0xd7d7d7,false);
 // courtyard at front
 box(0,.01,35,20,.03,6,0x6c9c61,false);sign('🏀 PÁTIO / QUADRA',0,2.8,37.8,0,'#b67823');
-// V6.4: personagens locais GLB/GLTF + escola imersiva, sem depender de modelos externos
+// V6.5: personagens GLB refeitos com anatomia conectada, proporções humanas e visual escolar
 function part(w,h,d,c,x,y,z){let m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat(c));m.position.set(x,y,z);return m}
 function human(opts={}){
   const g=new THREE.Group(), skin=opts.skin||0xd39a72, shirt=opts.shirt||0x315b85, pants=opts.pants||0x263238, hairC=opts.hair||0x3b2a20;
@@ -118,7 +118,7 @@ function upgradeToGLB(group,url,scale=1){
   },undefined,(err)=>console.warn('GLB fallback procedural:',url,err)); } catch(err) { console.warn('Falha GLB; fallback mantido:',url,err); }
 }
 
-function animateWalk(g,dt,moving=true){if(g.userData.glbModel){g.userData.walkPhase=(g.userData.walkPhase||0)+dt*(moving?7:3);g.userData.glbModel.position.y=moving?Math.abs(Math.sin(g.userData.walkPhase))*.018:0;}let L=g.userData.limbs;if(!L)return;g.userData.walkPhase+=dt*(moving?7:3);let a=moving?Math.sin(g.userData.walkPhase)*.52:0;L.armL.rotation.x=a;L.armR.rotation.x=-a;L.legL.rotation.x=-a*.65;L.legR.rotation.x=a*.65;if(!moving){L.armL.rotation.x*=.8;L.armR.rotation.x*=.8;L.legL.rotation.x*=.8;L.legR.rotation.x*=.8}}
+function animateWalk(g,dt,moving=true){if(g.userData.glbModel){g.userData.walkPhase=(g.userData.walkPhase||0)+dt*(moving?7:3);g.userData.glbModel.position.y=moving?Math.abs(Math.sin(g.userData.walkPhase))*.010:0;}let L=g.userData.limbs;if(!L)return;g.userData.walkPhase+=dt*(moving?7:3);let a=moving?Math.sin(g.userData.walkPhase)*.52:0;L.armL.rotation.x=a;L.armR.rotation.x=-a;L.legL.rotation.x=-a*.65;L.legR.rotation.x=a*.65;if(!moving){L.armL.rotation.x*=.8;L.armR.rotation.x*=.8;L.legL.rotation.x*=.8;L.legR.rotation.x*=.8}}
 const director=human({shirt:0x18365c,pants:0x1b2638,hair:0x2c211b});director.scale.set(1.08,1.08,1.08);director.position.set(0,0,-27);scene.add(director);
 const label=sign('DIRETOR',0,0,0,0,'#8f3c3c');label.scale.set(.34,.34,.34);label.userData.keepUI=true;director.add(label);label.position.set(0,3.0,.05);upgradeToGLB(director,'/models/director.glb',1.0);
 const directorAI={target:new THREE.Vector3(0,0,-20),wait:0,waitGoal:1.5,speed:1.45};
